@@ -180,7 +180,7 @@ if st.button("🤖 Check Feasibility with AI", use_container_width=True):
 
     try:
         with st.spinner("🤖 Running AI model analysis..."):
-            response = requests.post("http://127.0.0.1:8000/check-feasibility", json=payload, timeout=10)
+            response = requests.post("http://127.0.0.1:8001/check-feasibility", json=payload, timeout=10)
 
         if response.status_code == 200:
             result = response.json()

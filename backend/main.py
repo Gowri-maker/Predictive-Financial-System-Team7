@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from catboost import CatBoostClassifier
 import pandas as pd
 import shap
-from scraper import scrape_amazon
+from backend.scraper import scrape_amazon
 import os
 
 app = FastAPI()
