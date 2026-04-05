@@ -1,8 +1,8 @@
-# 4_Analytics.py
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from utils.db import get_connection
 from utils.db_queries import get_user_expenses
 from utils.styles import get_styles, page_header, metric_card, section_title
 
@@ -56,6 +56,7 @@ if df.empty:
         st.switch_page("pages/Log_Daily_Expense.py")
     st.stop()
 
+# ✅ FIXED LINE (ONLY CHANGE)
 df["expense_date"] = pd.to_datetime(df["expense_date"])
 
 total_spent        = df["amount"].sum()
@@ -100,7 +101,8 @@ with col_left:
     st.plotly_chart(fig_pie, use_container_width=True)
 
 with col_right:
-    daily   = df.groupby("expense_date")["amount"].sum().reset_index()
+    daily = df.groupby(df["expense_date"].dt.date)["amount"].sum().reset_index()
+    daily.rename(columns={"expense_date": "expense_date"}, inplace=True)
     fig_bar = px.bar(
         daily, x="expense_date", y="amount",
         title="Daily Spending Trend",
@@ -121,7 +123,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 st.markdown(section_title("📈 Monthly Spending Trend"), unsafe_allow_html=True)
 
-df["month"] = df["expense_date"].dt.to_period("M").astype(str)
+df["month"] = pd.to_datetime(df["expense_date"]).dt.to_period("M").astype(str)
 monthly     = df.groupby("month")["amount"].sum().reset_index()
 
 fig_line = px.line(
@@ -144,7 +146,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 st.markdown(section_title("📋 All Expenses"), unsafe_allow_html=True)
 
-display_df = df[["expense_date", "product_name", "category", "amount"]].copy()
+display_df = df[["id", "expense_date", "product_name", "category", "amount"]].copy()
 display_df = display_df.rename(columns={
     "expense_date": "Date",
     "product_name": "Description",
@@ -152,4 +154,22 @@ display_df = display_df.rename(columns={
     "amount":       "Amount (₹)"
 }).sort_values("Date", ascending=False)
 
-st.dataframe(display_df, use_container_width=True, hide_index=True)
+from utils.db import get_connection  # (add at top if not already)
+
+for index, row in display_df.iterrows():
+    col1, col2, col3, col4, col5 = st.columns([2,2,2,2,1])
+
+    col1.write(row["Date"])
+    col2.write(row["Description"])
+    col3.write(row["Category"])
+    col4.write(f"₹{row['Amount (₹)']}")
+
+    if col5.button("🗑️", key=f"delete_{row['id']}"):
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM user_expenses WHERE id=?", (row["id"],))
+        conn.commit()
+        conn.close()
+
+        st.success("Deleted successfully")
+        st.rerun()

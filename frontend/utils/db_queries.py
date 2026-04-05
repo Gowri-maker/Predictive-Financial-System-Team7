@@ -6,7 +6,7 @@ def get_user_expenses(user_id):
     conn = get_connection()
 
     query = """
-    SELECT expense_date, product_name, category, amount
+    SELECT id, expense_date, product_name, category, amount
     FROM user_expenses
     WHERE user_id = ?
     """
@@ -32,3 +32,4 @@ def insert_expense(user_id, expense_date, product_name, category, amount):
 
     conn.commit()
     conn.close()
+    
